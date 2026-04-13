@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import httpx
 from datetime import datetime
 from typing import Optional
@@ -14,38 +15,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GENDERIZE_API_URL = "https://api.genderize.io/"
+GENDERIZE_API_URL = "https://api.genderize.io"
 
 @app.get("/api/classify")
-async def classify_name(name: Optional[str] = Query(None, min_length=1)):
-    if not name or name.strip() == "":
-        raise HTTPException(
+async def classify_name(name: Optional[str] = Query(None)):
+    
+    # 400 missing or empty
+    if name is None or name.strip() == "":
+        return JSONResponse(
             status_code=400,
-            detail={"status": "error", "message": "Name query parameter is required and cannot be empty"}
+            content={
+                "status": "error",
+                "message": "Name query parameter is required and cannot be empty"
+            }
         )
-    
+
     clean_name = name.strip()
-    
+
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
-            response = await client.get(GENDERIZE_API_URL, params={"name": clean_name})
+            response = await client.get(
+                GENDERIZE_API_URL,
+                params={"name": clean_name}
+            )
             response.raise_for_status()
             data = response.json()
-        
+
         gender = data.get("gender")
-        probability = data.get("probability")
-        count = data.get("count")
-        
+        probability = float(data.get("probability") or 0)
+        count = int(data.get("count") or 0)
+
+        # edge case
         if gender is None or count == 0:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=404,
-                detail={"status": "error", "message": "No prediction available for the provided name"}
+                content={
+                    "status": "error",
+                    "message": "No prediction available for the provided name"
+                }
             )
-        
+
         sample_size = count
-        is_confident = (probability >= 0.7 and sample_size >= 100)
+        is_confident = (
+            probability >= 0.7 and sample_size >= 100
+        )
+
         processed_at = datetime.utcnow().isoformat() + "Z"
-        
+
         return {
             "status": "success",
             "data": {
@@ -57,19 +73,30 @@ async def classify_name(name: Optional[str] = Query(None, min_length=1)):
                 "processed_at": processed_at
             }
         }
-    
+
     except httpx.TimeoutException:
-        raise HTTPException(
+        return JSONResponse(
             status_code=502,
-            detail={"status": "error", "message": "External API timeout"}
+            content={
+                "status": "error",
+                "message": "External API timeout"
+            }
         )
+
     except httpx.HTTPStatusError:
-        raise HTTPException(
+        return JSONResponse(
             status_code=502,
-            detail={"status": "error", "message": "External API error"}
+            content={
+                "status": "error",
+                "message": "External API error"
+            }
         )
-    except Exception:
-        raise HTTPException(
+
+    except Exception as e:
+        return JSONResponse(
             status_code=500,
-            detail={"status": "error", "message": "Internal server error"}
+            content={
+                "status": "error",
+                "message": str(e)
+            }
         )
