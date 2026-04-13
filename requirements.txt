@@ -1,0 +1,4 @@
+flask
+uvicorn
+httpx 
+python-multipart
