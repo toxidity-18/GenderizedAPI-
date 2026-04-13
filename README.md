@@ -1,25 +1,42 @@
-# GenderizedAPI 
+# Genderized API
 
-A serverless API built with **FastAPI** and deployed on **Vercel** that integrates with the **Genderize.io API**.
+A backend API built with **FastAPI** and deployed on **Vercel** for the Stage 0 Backend Assessment.
 
-It processes the external response by:
-
-- Renaming `count` → `sample_size`
-- Adding `is_confident`
-- Adding `processed_at`
-- Returning standardized error responses
+This API integrates with the **Genderize.io API**, processes the raw response, and returns a standardized enriched result.
 
 ---
 
-## Endpoint
+## Live API
 
-### GET `/api/classify?name={name}`
+Base URL:
+
+```text
+https://genderized-api.vercel.app
+````
+
+Endpoint:
+
+```text
+GET /api/classify?name=<name>
+```
 
 Example:
 
-```bash
-https://your-app.vercel.app/api/classify?name=john
-````
+```text
+https://genderized-api.vercel.app/api/classify?name=john
+```
+
+---
+
+## Features
+
+* Calls the external Genderize API
+* Renames `count` → `sample_size`
+* Computes `is_confident`
+* Adds `processed_at` timestamp (UTC ISO 8601)
+* Handles edge cases and errors
+* Includes CORS support
+* Deployed publicly on Vercel
 
 ---
 
@@ -34,7 +51,7 @@ https://your-app.vercel.app/api/classify?name=john
     "probability": 0.99,
     "sample_size": 1234,
     "is_confident": true,
-    "processed_at": "2026-04-13T12:34:56Z"
+    "processed_at": "2026-04-13T20:40:00Z"
   }
 }
 ```
@@ -43,7 +60,7 @@ https://your-app.vercel.app/api/classify?name=john
 
 ## Error Responses
 
-### 400 – Missing name
+### Missing or empty name (400)
 
 ```json
 {
@@ -52,7 +69,7 @@ https://your-app.vercel.app/api/classify?name=john
 }
 ```
 
-### 404 – No prediction
+### No prediction available (404)
 
 ```json
 {
@@ -61,7 +78,7 @@ https://your-app.vercel.app/api/classify?name=john
 }
 ```
 
-### 502 – External API failure
+### External API timeout (502)
 
 ```json
 {
@@ -72,39 +89,48 @@ https://your-app.vercel.app/api/classify?name=john
 
 ---
 
-## Logic Used
+## Confidence Logic
 
 ```text
 is_confident = probability >= 0.7 AND sample_size >= 100
 ```
 
+If either condition fails, `is_confident` returns `false`.
+
 ---
 
-## Run Locally
+## Local Development
+
+Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/genderize-vercel.git
-cd genderize-vercel
+git clone https://github.com/toxidity-18/GenderizedAPI-.git
+cd GenderizedAPI-
+```
 
+Create virtual environment:
+
+```bash
 python -m venv venv
 source venv/bin/activate
+```
 
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
+```
+
+Run locally:
+
+```bash
 uvicorn api.index:app --reload --port 3000
 ```
 
-Test:
+Test locally:
 
-```bash
+```text
 http://localhost:3000/api/classify?name=john
-```
-
----
-
-## Deploy
-
-```bash
-vercel --prod
 ```
 
 ---
@@ -112,11 +138,12 @@ vercel --prod
 ## Project Structure
 
 ```text
-GenderizeAPI/
+GenderizedAPI-/
 ├── api/
 │   └── index.py
 ├── requirements.txt
 ├── vercel.json
+├── .gitignore
 └── README.md
 ```
 
@@ -131,11 +158,9 @@ GenderizeAPI/
 
 ---
 
-## Live URL
+## GitHub Repository
 
-```bash
-https://your-app.vercel.app
-```
+* **GitHub Repo:** https://github.com/toxidity-18/GenderizedAPI-
+* **Live API:** https://genderized-api.vercel.app
 
-```
-```
+
