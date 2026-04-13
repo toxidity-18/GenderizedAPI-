@@ -6,7 +6,6 @@ from typing import Optional
 
 app = FastAPI()
 
-# Enable CORS for all origins 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,12 +18,6 @@ GENDERIZE_API_URL = "https://api.genderize.io/"
 
 @app.get("/api/classify")
 async def classify_name(name: Optional[str] = Query(None, min_length=1)):
-    """
-    GET /api/classify?name=<name>
-    
-    Calls Genderize API, processes response, returns enriched data.
-    """
-    # 1. Validate input: missing or empty name
     if not name or name.strip() == "":
         raise HTTPException(
             status_code=400,
@@ -34,7 +27,6 @@ async def classify_name(name: Optional[str] = Query(None, min_length=1)):
     clean_name = name.strip()
     
     try:
-        # 2. Call Genderize API with timeout
         async with httpx.AsyncClient(timeout=3.0) as client:
             response = await client.get(GENDERIZE_API_URL, params={"name": clean_name})
             response.raise_for_status()
@@ -44,19 +36,16 @@ async def classify_name(name: Optional[str] = Query(None, min_length=1)):
         probability = data.get("probability")
         count = data.get("count")
         
-        # 3. Edge case: no prediction available
         if gender is None or count == 0:
             raise HTTPException(
                 status_code=404,
                 detail={"status": "error", "message": "No prediction available for the provided name"}
             )
         
-        # 4. Process data
         sample_size = count
         is_confident = (probability >= 0.7 and sample_size >= 100)
-        processed_at = datetime.utcnow().isoformat() + "Z"   # UTC ISO8601
+        processed_at = datetime.utcnow().isoformat() + "Z"
         
-        # 5. Success response
         return {
             "status": "success",
             "data": {
