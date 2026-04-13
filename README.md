@@ -1,4 +1,3 @@
-````markdown
 # GenderizedAPI 
 
 A serverless API built with **FastAPI** and deployed on **Vercel** that integrates with the **Genderize.io API**.
